@@ -1,0 +1,269 @@
+
+
+% Any additional packages needed should be included after jmlr2e.
+% Note that jmlr2e.sty includes epsfig, amssymb, natbib and graphicx,
+% and defines many common macros, such as 'proof' and 'example'.
+%
+% It also sets the bibliographystyle to plainnat; for more information on
+% natbib citation styles, see the natbib documentation, a copy of which
+% is archived at http://www.jmlr.org/format/natbib.pdf
+%\usepackage{jmlr2e}
+
+\documentclass[ruled]{article}
+\usepackage{courier}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage[letterpaper]{geometry}
+\geometry{verbose}
+\usepackage{color}
+\usepackage{url}
+\usepackage{algorithm2e}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[unicode=true,
+ bookmarks=false,
+ breaklinks=false,pdfborder={0 0 1},backref=section,colorlinks=true]
+ {hyperref}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\providecommand{\LyX}{\texorpdfstring%
+  {L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\@}
+  {LyX}}
+%% Because html converters don't know tabularnewline
+\providecommand{\tabularnewline}{\\}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+\newenvironment{lyxcode}
+{\par\begin{list}{}{
+\setlength{\rightmargin}{\leftmargin}
+\setlength{\listparindent}{0pt}% needed for AMS classes
+\raggedright
+\setlength{\itemsep}{0pt}
+\setlength{\parsep}{0pt}
+\normalfont\ttfamily}%
+ \item[]}
+{\end{list}}
+ \newcommand{\code}[1]{\texttt{#1}}
+
+\@ifundefined{date}{}{\date{}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\makeatother
+
+\usepackage{listings}
+\lstset{backgroundcolor={\color{white}},
+basicstyle={\footnotesize\ttfamily},
+breakatwhitespace=false,
+breaklines=true,
+captionpos=b,
+commentstyle={\color{mygreen}},
+deletekeywords={...},
+escapeinside={\%*}{*)},
+extendedchars=true,
+frame=shadowbox,
+keepspaces=true,
+keywordstyle={\color{blue}},
+language=Python,
+morekeywords={*,...},
+numbers=none,
+numbersep=5pt,
+numberstyle={\tiny\color{mygray}},
+rulecolor={\color{black}},
+showspaces=false,
+showstringspaces=false,
+showtabs=false,
+stepnumber=1,
+stringstyle={\color{mymauve}},
+tabsize=2}
+\begin{document}
+\global\long\def\reals{\mathbf{R}}
+ \global\long\def\integers{\mathbf{Z}}
+\global\long\def\naturals{\mathbf{N}}
+ \global\long\def\rationals{\mathbf{Q}}
+\global\long\def\ca{\mathcal{A}}
+\global\long\def\cb{\mathcal{B}}
+ \global\long\def\cc{\mathcal{C}}
+ \global\long\def\cd{\mathcal{D}}
+\global\long\def\ce{\mathcal{E}}
+\global\long\def\cf{\mathcal{F}}
+\global\long\def\cg{\mathcal{G}}
+\global\long\def\ch{\mathcal{H}}
+\global\long\def\ci{\mathcal{I}}
+\global\long\def\cj{\mathcal{J}}
+\global\long\def\ck{\mathcal{K}}
+\global\long\def\cl{\mathcal{L}}
+\global\long\def\cm{\mathcal{M}}
+\global\long\def\cn{\mathcal{N}}
+\global\long\def\co{\mathcal{O}}
+\global\long\def\cp{\mathcal{P}}
+\global\long\def\cq{\mathcal{Q}}
+\global\long\def\calr{\mathcal{R}}
+\global\long\def\cs{\mathcal{S}}
+\global\long\def\ct{\mathcal{T}}
+\global\long\def\cu{\mathcal{U}}
+\global\long\def\cv{\mathcal{V}}
+\global\long\def\cw{\mathcal{W}}
+\global\long\def\cx{\mathcal{X}}
+\global\long\def\cy{\mathcal{Y}}
+\global\long\def\cz{\mathcal{Z}}
+\global\long\def\ind#1{1(#1)}
+\global\long\def\pr{\mathbb{P}}
+
+\global\long\def\ex{\mathbb{E}}
+\global\long\def\var{\textrm{Var}}
+\global\long\def\cov{\textrm{Cov}}
+\global\long\def\sgn{\textrm{sgn}}
+\global\long\def\sign{\textrm{sign}}
+\global\long\def\kl{\textrm{KL}}
+\global\long\def\law{\mathcal{L}}
+\global\long\def\eps{\varepsilon}
+\global\long\def\convd{\stackrel{d}{\to}}
+\global\long\def\eqd{\stackrel{d}{=}}
+\global\long\def\del{\nabla}
+\global\long\def\loss{\ell}
+\global\long\def\tr{\operatorname{tr}}
+\global\long\def\trace{\operatorname{trace}}
+\global\long\def\diag{\text{diag}}
+\global\long\def\rank{\text{rank}}
+\global\long\def\linspan{\text{span}}
+\global\long\def\proj{\text{Proj}}
+\global\long\def\argmax{\operatornamewithlimits{arg\, max}}
+\global\long\def\argmin{\operatornamewithlimits{arg\, min}}
+\global\long\def\bfx{\mathbf{x}}
+\global\long\def\bfy{\mathbf{y}}
+\global\long\def\bfl{\mathbf{\lambda}}
+\global\long\def\bfm{\mathbf{\mu}}
+\global\long\def\calL{\mathcal{L}}
+\global\long\def\vw{\boldsymbol{w}}
+\global\long\def\vx{\boldsymbol{x}}
+\global\long\def\vxi{\boldsymbol{\xi}}
+\global\long\def\valpha{\boldsymbol{\alpha}}
+\global\long\def\vbeta{\boldsymbol{\beta}}
+\global\long\def\vsigma{\boldsymbol{\sigma}}
+\global\long\def\vmu{\boldsymbol{\mu}}
+\global\long\def\vtheta{\boldsymbol{\theta}}
+\global\long\def\vd{\boldsymbol{d}}
+\global\long\def\vs{\boldsymbol{s}}
+\global\long\def\vt{\boldsymbol{t}}
+\global\long\def\vh{\boldsymbol{h}}
+\global\long\def\ve{\boldsymbol{e}}
+\global\long\def\vf{\boldsymbol{f}}
+\global\long\def\vg{\boldsymbol{g}}
+\global\long\def\vz{\boldsymbol{z}}
+\global\long\def\vk{\boldsymbol{k}}
+\global\long\def\va{\boldsymbol{a}}
+\global\long\def\vb{\boldsymbol{b}}
+\global\long\def\vv{\boldsymbol{v}}
+\global\long\def\vy{\boldsymbol{y}}
+
+
+\title{Breast Cancer Classification}
+\author{Nhung Le, B V Nithish Addepalli, Ravi Choudhary}
+
+\maketitle
+
+\section{Motivation and Related Work}
+
+According to the World Health Organizatin, breast cancer is the most common cancer in women. Statistically, about 1 in 8 U.S. women (12$\%$) will develop ivasive breast cancer over the course of her lifetime. Given the development of science and technology, many forms of breast cancer are cured if diagnosed early. Thus, it is important to diagnose breast cancer or early sign of pre-cancer cells to help women avoid and get treated early. \\ 
+ 
+Mammogram screening is one of the most common diagnosis method for breast cancer. Multiple traditional machine learning algorithms including support vector machine, logistic regression, K-nearest neighbor, and Bayes classification have been utilized to predict breast cancer. The predicts showed high diagnostic accuracy, sometimes outperformed radiologists. In addition, the prediction algorithms provided radiologists with useful information for breast cancer diagnosis. \\
+
+\section{Data}
+
+The data set CBIS-DDSM (Curated Breast Imaging Subset of Digital Database for Screening Mammography) is an updated and standardized version of the DDSM, which has 2,620 scanned film mammography studies. After a thoughful preparation of the CBIS-DDSM including removal of questionable cases, image decompression, image prcessing, image cropping, and mass segmentation, the dataset is ready to use.\\
+
+The dataset has 1,541 calcification studies and 1,318 mass studies. Each study has full mammogram image, crops of abnomalities (i.e., abnormalities were cropped by determining the bounding rectangle of the abnormality with respect to its ROI), and ROI images. Note that the lesion segmentation algorithm was applied to ROI masses images to identify more accurate ROIs for masses.  That being said, in total, we have $ 3 * (1541 + 1318) = 8577 $ images. The dataset was also split into train and test for both calcifications and masses. \\
+
+For this project, our team will focuse on masses images, first using the full mammogram images, then using ROI images for improvement. 
+
+
+\section{Proposed Method}
+
+This is a multi-classification problem so there are couple of deep learning methods we will perform as shown below. 
+\begin{enumerate}
+\item Convolutional Neural Network with 2, 3, 4 convolutional layers.
+\begin{description}
+  \item[$\bullet$] Embedding Visualization 
+  \item[$\bullet$] Reduce dimension t-SNE or PCA
+  \item[$\bullet$] Train data with 2, 3, or 4 convolutional layers
+\end{description}
+
+\item Inception: the idea is to performs convolution on an input, with 3 different sizes of filters (1x1, 3x3, 5x5)
+\begin{description}
+  \item[$\bullet$] Factorize 5x5 convolution to two 3x3 convolution operations to improve computational speed
+  \item[$\bullet$] Factorize convolutions of filter size nxn to a combination of 1xn and nx1 convolutions
+  \item[$\bullet$] The filter banks in the module were expanded (made wider instead of deeper) to remove the representational bottleneck
+\end{description}
+
+
+\item Inception-ResNet: 
+\begin{description}
+  \item[$\bullet$] 
+  \item[$\bullet$] 
+  \item[$\bullet$] 
+\end{description}
+
+\item Ensemble model: We will ensemble the two best models to obtain a superior model.
+
+\end{enumerate}
+
+
+\section{Evaluation Metrics}
+
+\begin{enumerate}
+
+\item Loss function
+
+\begin{description}
+  \item[$\bullet$] Hinge Loss with Regularization
+\[
+\min_{w\in\reals^{d}}\frac{\lambda}{2}\|w\|^{2}+\frac{1}{m}\sum_{i=1}^{m}\max\left\{ 0,1-y_{i}w^{T}x_{i}\right\} .
+\]
+  \item[$\bullet$] Categorical Cross-Entropy Loss (aka Softmax Loss)
+\[
+L_i = -f_{y_i} + log \sum_{j=1}^{n} e^{f_j}
+\]
+where $f_j$ is the j-th element of the vector of class score $f$, and $i$ is i-th instance. 
+\end{description}
+
+
+\item Evaluation metric 
+
+\begin{description}
+  \item[$\bullet$] F1 Score
+  \item[$\bullet$] Accuracy Rate
+  \item[$\bullet$] ROC curve and AUC
+\end{description}
+
+\end{enumerate}
+
+\section{Timeline}
+
+\begin{enumerate}
+\item Load Data: 02/24 - 03/15 
+\item Feature Engineering: 03/16 - 04/10
+\item Model Development: 03/16 - 04/25
+\item Model Evaluation and Improvement: 03/16 - 05/07 
+\item Project Finalization: 05/07
+\item Project Presentation: 05/09 - 05/10
+
+\end{enumerate}
+
+% Manual newpage inserted to improve layout of sample file - not
+% needed in general before appendices/bibliography.
+
+\newpage
+\bibliography{sample}
+1. https://www.nature.com/articles/sdata2017177\\
+2. https://towardsdatascience.com/a-simple-guide-to-the-versions-of-the-inception-network-7fc52b863202\\
+3. https://towardsdatascience.com/the-4-convolutional-neural-network-models-that-can-classify-your-fashion-images-9fe7f3e5399d\\
+4. http://cs231n.github.io/understanding-cnn/\\
+5. chrome-extension://oemmndcbldboiebfnladdacbdfmadadm/https://arxiv.org/pdf/1602.07261.pdf \\
+6. http://cs231n.github.io/linear-classify/ \\
+
+\end{document}
