@@ -46,90 +46,84 @@ from sklearn.preprocessing import label_binarize
 import pydicom
 
 
-class MamogramDataset_TL(Dataset):
-
-    def __init__(self, csv_file, root_dir, image_column, num_channel, transform=None,
-                transform_type = 'Custom', transform_prob=0.5):
+class MamogramDataset_TL(Dataset):   
+    def __init__(self, data_file, root_dir, image_column, num_channel=1, transform = None, transform_type = 'Custom', transform_prob=0.5):
         """
         Args:
             csv_file (string): Path to the csv file filename information.
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
-            image_column (string): name of the column image used
+            image_column: column name from csv file where we take the file path
         """
-        self.data_frame = pd.read_csv(csv_file)
+        #self.data_frame = pickle.load(open(os.path.join(root_dir,data_file),"rb"))
+        self.data_frame = pd.read_csv(data_file)
         self.root_dir = root_dir
         self.transform = transform
         self.image_column = image_column
         self.num_channel = num_channel
         self.transform_prob = transform_prob
         self.transform_type = transform_type
-        self.samples = []
-        
-        for idx in range(len(self.data_frame)):
-            image_name = os.path.join(self.root_dir,
-                                    self.data_frame.loc[idx, image_column])
-
-            image = pydicom.dcmread(image_name).pixel_array
-            
-            if self.num_channel > 1:
-                image = np.uint8(image/65535*255)
-                image = np.repeat(image[...,None],self.num_channel,axis=-1)
-            else:
-                h,w = image.shape
-                resized_h = 1024
-                resized_w = int(resized_h/h*w)
-                image = transform.resize(image, (resized_h, resized_w), anti_aliasing=True,mode='constant')
-                pad_col = resized_h-resized_w
-                image = np.pad(image,((0,0),(0,pad_col)),mode='constant',constant_values=0)
-                image = (image - image.mean()) / image.std()
-                image = image[None,...]
-
-            image_class = self.data_frame.loc[idx, 'class']
-
-            if self.transform:
-                image = self.transform(image)
-            elif self.transform_type == 'Custom':
-                p1 = random.uniform(0, 1)
-                p2 = random.uniform(0, 1)
-                if p1 <= self.transform_prob:
-                    image = image[:,:,-1].copy()
-                if p2 <= self.transform_prob:
-                    image = transform.rotate(image,180)
-
-            sample = {'x': image, 'y': image_class}
-            self.samples.append(sample)
 
     def __len__(self):
         return len(self.data_frame)
 
     def __getitem__(self, idx):
-        return self.samples[idx]
+        img_name = os.path.join(self.root_dir, str(self.data_frame.loc[idx, self.image_column]))
+        image = pydicom.dcmread(img_name).pixel_array
+        if self.num_channel > 1:
+            image = np.uint8(image/65535*255)
+            image = np.repeat(image[...,None],self.num_channel,axis=-1)
+        else:
+            h,w = image.shape
+            resized_h = 1024
+            resized_w = int(resized_h/h*w)
+            image = transform.resize(image, (resized_h, resized_w), anti_aliasing=True,mode='constant')
+            pad_col = resized_h-resized_w
+            image = np.pad(image,((0,0),(0,pad_col)),mode='constant',constant_values=0)
+            image = (image - image.mean()) / image.std()
+            image = image[None,...]
+        
+        image_class = self.data_frame.loc[idx, 'class']
 
-def GetDataLoader_TL(train_csv, validation_csv, test_csv, root_dir, image_column, num_channel, 
+        if self.transform:
+            image = self.transform(image)
+        elif self.transform_type == 'Custom':
+            p1 = random.uniform(0, 1)
+            p2 = random.uniform(0, 1)
+            if p1 <= self.transform_prob:
+                image = image[:,:,-1].copy()
+            if p2 <= self.transform_prob:
+                image = transform.rotate(image,180)
+        
+        sample = {'x': image, 'y': image_class}
+
+        return sample
+
+def GetDataLoader_TL(train_csv, validation_csv, test_csv, root_dir, 
+                     image_column, num_channel, 
                      transform_type, transform_prob, 
                train_transform, validation_transform, 
                batch_size, shuffle, num_workers): 
 
-    train_data = MamogramDataset_TL(csv_file = train_csv, 
+    train_data = MamogramDataset_TL(data_file = train_csv, 
                               root_dir = root_image,
                               image_column = image_column,
                               num_channel = num_channel, 
                                transform=train_transform, 
                                transform_type = transform_type, 
                                    transform_prob = transform_prob)
-    val_data = MamogramDataset_TL(csv_file = validation_csv, 
+    val_data = MamogramDataset_TL(data_file = validation_csv, 
                             root_dir = root_image,
                             image_column = image_column,
                             transform = validation_transform,
                                  num_channel = num_channel, 
                                transform_type = transform_type, 
                                    transform_prob = transform_prob)
-    test_data = MamogramDataset_TL(csv_file = test_csv, 
+    test_data = MamogramDataset_TL(data_file = test_csv, 
                             root_dir = root_image,
                             image_column = image_column,
-                            transform = None,
+                            transform = validation_transform,
                             num_channel = num_channel, 
                                transform_type = transform_type, 
                                    transform_prob = transform_prob)
@@ -149,9 +143,7 @@ def GetDataLoader_TL(train_csv, validation_csv, test_csv, root_dir, image_column
                                               num_workers=NUM_WORKERS) 
                     for x in ['train', 'val', 'test']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val', 'test']}
-#     print(len(image_datasets['train']), 
-#           len(image_datasets['val']),
-#          len(image_datasets['test']))
+
     return dataloaders, dataset_sizes
 
 
@@ -167,7 +159,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs = 10,verbose 
 
     for epoch in range(num_epochs):
         if verbose:
-#             if epoch % 5 == 4:
+            #if epoch % 5 == 4:
             print('Epoch {}/{}'.format(epoch+1, num_epochs))
             print('-' * 10)
             
@@ -278,7 +270,7 @@ NUM_WORKERS = 1
 BATCH_SIZE = 1
 graph_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/graphs'
 
-# ######### HPC Paths ######## 
+# ######### HPC Paths - Full Data Set ######## 
 # excel_path = '/home/nhl256/BreastCancer/excel_files'
 # train_local_csv = os.path.join(excel_path, 
 #                              'twoClass_trainSet.csv')
@@ -288,10 +280,28 @@ graph_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagno
 #                               "twoClass_testSet.csv")
 
 # image_path = '/scratch/bva212/breastCancerData'
-# root_image = os.path.join(image_path ,'CBIS-DDSM')
+# #root_image = os.path.join(image_path ,'CBIS-DDSM')
+# root_image = image_path
 
 # NUM_WORKERS = 4
-# BATCH_SIZE = 16
+# BATCH_SIZE = 2
+# graph_path = '/home/nhl256/BreastCancer/graphs'
+
+# ######### HPC Paths - Sample Data Set ######## 
+# excel_path = '/home/nhl256/BreastCancer/excel_files'
+# train_local_csv = os.path.join(excel_path, 
+#                              'twoClass_trainSet_sample.csv')
+# validation_local_csv = os.path.join(excel_path, 
+#                               'twoClass_validSet_sample.csv')
+# test_local_csv = os.path.join(excel_path, 
+#                               'twoClass_testSet_sample.csv')
+
+# image_path = '/scratch/bva212/breastCancerData'
+# #root_image = os.path.join(image_path ,'CBIS-DDSM')
+# root_image = image_path
+
+# NUM_WORKERS = 4
+# BATCH_SIZE = 2
 # graph_path = '/home/nhl256/BreastCancer/graphs'
 
 use_gpu = torch.cuda.is_available()
@@ -319,7 +329,7 @@ for param in resNet34_tl.parameters():
 fc_in_features = resNet34_tl.fc.in_features
 resNet34_tl.fc = torch.nn.Linear(fc_in_features, 2)
 
-resNet34_tl = resNet34_tl#.to(device)
+resNet34_tl = resNet34_tl.to(device)
 
 optimizer = torch.optim.SGD(resNet34_tl.fc.parameters(), lr = 0.01, momentum=0.9)
 
@@ -327,7 +337,7 @@ criterion = nn.CrossEntropyLoss()
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',patience=2)
 
-BestResNet34_tl = train_model(resNet34_tl, criterion, optimizer, scheduler, num_epochs = 10, verbose = True)
+BestResNet34_tl = train_model(resNet34_tl, criterion, optimizer, scheduler, num_epochs = 100, verbose = True)
 
 ##### Plot #####
 def PlotAccLoss(model, model_name): 
@@ -339,22 +349,57 @@ def PlotAccLoss(model, model_name):
     ax.set_xlabel('Epochs')
     legend = ax.legend(loc= 'best', shadow=True,
                           bbox_to_anchor = (0.5, 0, 0.5, 0.5), ncol = 1, prop = {'size': 10})
-    plt.savefig(os.path.join(graph_path ,'LossCurves_{}.png'.format(model_name)))
+    plt.savefig(os.path.join(graph_path ,'LossCurves_{}_FullData.png'.format(model_name)))
 
     fig, ax = plt.subplots()
     for key in model['AccDict']: 
         ax.plot(model['AccDict'][key], label = key)
-    ax.set_title('Train and Validation Loss Curves')
+    ax.set_title('Train and Validation Accuracy Curves')
     ax.set_ylabel('Accuracy')
     ax.set_xlabel('Epochs')
     legend = ax.legend(loc= 'best', shadow=True,
                           bbox_to_anchor = (0.5, 0, 0.5, 0.5), ncol = 1, prop = {'size': 10})
-    plt.savefig(os.path.join(graph_path ,'AccuracyCurves_{}.png'.format(model_name)))
+    plt.savefig(os.path.join(graph_path ,'AccuracyCurves_{}_FullData.png'.format(model_name)))
 
 PlotAccLoss(BestResNet34_tl, 'ResNet34')
 
 # ##### Inference #######
-# BestResNet34_tl = torch.load(os.path.join(graph_path, 'BestResNet34_tl.pt'))
-# y_score, y_target = inference(BestConvNetModel, dataloaders['test'])
-# write_list_to_file(os.path.join(graph_path, 'y_score.txt'), y_score)
-# write_list_to_file(os.path.join(graph_path, 'y_target.txt'), y_target)
+def inference(model_ft,loader):
+    model_ft.eval()
+    whole_output =[]
+    whole_target = []
+    
+
+    for valData in loader:
+        data = valData['x']
+        target = valData['y']
+        if use_gpu:
+            data = Variable(data,volatile=True).type(torch.FloatTensor).cuda()
+            target = Variable(target,volatile=True).type(torch.LongTensor).cuda()
+        else:
+            data= Variable(data,volatile=True).type(torch.FloatTensor)
+            target = Variable(target,volatile=True).type(torch.LongTensor)
+
+        output =F.softmax(model_ft(data),dim=1)
+        whole_output.append( output.cpu().data.numpy())
+        whole_target.append( valData['y'].numpy())
+
+    whole_output = np.concatenate(whole_output)
+    whole_target = list(np.concatenate(whole_target))
+    y_target = whole_target
+
+
+    #print('Whole_output: {}, whole_target: {}'.format(whole_output, whole_target))
+    #print('y_target: {}'.format(y_target))
+    y_score = [output[1] for output in whole_output]
+    return y_score, y_target
+
+def write_list_to_file(filename, my_list):
+    with open(filename, 'w') as f:
+        for item in my_list:
+            f.write("%s\n" % item)
+
+BestResNet34_tl = torch.load(os.path.join(graph_path, 'BestResNet34_tl.pt'))
+y_score, y_target = inference(BestConvNetModel, dataloaders['test'])
+write_list_to_file(os.path.join(graph_path, 'y_score_ResNet34_tl_fulldata.txt'), y_score)
+write_list_to_file(os.path.join(graph_path, 'y_target_ResNet34_tl_fulldata.txt'), y_target)

@@ -45,6 +45,10 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import label_binarize
 import pydicom
 
+### NOTE:  ####
+# This script is to run a subset of data for model ResNet34 
+# The MamogramDataset_TL get / transform all images once before running the model. This method is faster because we do not have 
+# to transform every images whenever we run, but costs a lot of memory   
 
 class MamogramDataset_TL(Dataset):
 
@@ -294,6 +298,7 @@ validation_transform = transforms.Compose([
 # NUM_WORKERS = 4
 # BATCH_SIZE = 2
 # graph_path = '/home/nhl256/BreastCancer/graphs'
+
 
 ######### HPC Paths - Sample Data Set ######## 
 excel_path = '/home/nhl256/BreastCancer/excel_files'

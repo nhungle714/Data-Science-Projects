@@ -94,3 +94,12 @@ validSet = train_valid[(train_valid['patient_id'].isin(valid_id_leftright['patie
 trainSet.to_csv(os.path.join(excel_path, 'twoClass_trainSet.csv'))
 validSet.to_csv(os.path.join(excel_path, 'twoClass_validSet.csv'))
 testSet.to_csv(os.path.join(excel_path, 'twoClass_testSet.csv'))
+
+# Get a subset of data 
+trainSet_sample = trainSet[:500]
+valSet_sample = validSet[:100]
+testSet_sample = testSet[:100]
+
+trainSet_sample.to_csv(os.path.join(excel_path, 'twoClass_trainSet_sample.csv'))
+valSet_sample.to_csv(os.path.join(excel_path, 'twoClass_validSet_sample.csv'))
+testSet_sample.to_csv(os.path.join(excel_path, 'twoClass_testSet_sample.csv'))
