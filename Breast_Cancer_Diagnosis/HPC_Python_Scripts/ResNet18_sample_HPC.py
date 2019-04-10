@@ -163,12 +163,16 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
 
     acc_dict = {'train':[],'validation':[]}
     loss_dict = {'train':[],'validation':[]}
+    auc_dict ={'train': [], 'validation': []}
 
     for epoch in range(num_epochs):
         if verbose:
             #if epoch % 5 == 4:
             print('Epoch {}/{}'.format(epoch+1, num_epochs))
             print('-' * 10)
+            
+        ## Scheduler learning step
+        #scheduler.step()
             
         for phase in ['train','val']:
             if phase == 'train':
@@ -178,6 +182,8 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
 
             running_loss = 0.0
             running_corrects = 0
+            whole_output = []
+            whole_target = []
 
             for data in dataloaders[phase]:
                 
@@ -199,6 +205,11 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
                 _, preds = torch.max(out, dim = 1)
                 loss = criterion(out, labels)
                 
+                #To get AUC score later
+                output =F.softmax(model(inputs),dim=1)
+                whole_output.append( output.cpu().data.numpy())
+                whole_target.append( data['y'])
+                
                 if phase == 'train':
                     loss.backward()
                     optimizer.step()
@@ -208,17 +219,24 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects / dataset_sizes[phase]
+            epoch_whole_output = np.concatenate(whole_output)
+            y_target = list(np.concatenate(whole_target))
+            y_score = [output[1] for output in epoch_whole_output]
+            fpr, tpr, _ = roc_curve(y_target, y_score, pos_label=1)
+            epoch_auc = auc(fpr, tpr)
 
             if verbose:
 #                 if epoch % 5 == 4:
-                print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+                print('{} Loss: {:.4f} Acc: {:.4f} Auc: {:.4f}'.format(phase, epoch_loss, epoch_acc, epoch_auc))
 
             if phase == 'train':
                 loss_dict['train'].append(epoch_loss)
                 acc_dict['train'].append(epoch_acc)
+                auc_dict['train'].append(epoch_auc)
             else:
                 loss_dict['validation'].append(epoch_loss)
                 acc_dict['validation'].append(epoch_acc)
+                auc_dict['validation'].append(epoch_auc)
                     
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
@@ -246,7 +264,7 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
     model.load_state_dict(best_model_wts)
     torch.save(model, os.path.join(graph_path, '{}.pt'.format(model_name)))
     
-    return {'Model': model, 'LossDict': loss_dict, 'AccDict': acc_dict}
+    return {'Model': model, 'LossDict': loss_dict, 'AccDict': acc_dict, 'AucDict': auc_dict}
 
 ####################  Define Data Path ###########################
 
@@ -264,7 +282,7 @@ image_path = '/scratch/bva212/breastCancerData'
 root_image = image_path
 
 NUM_WORKERS = 4
-BATCH_SIZE = 2
+BATCH_SIZE = 4
 graph_path = '/home/nhl256/BreastCancer/graphs'
 
 # ######### Local Machine Paths ######## 
@@ -335,14 +353,14 @@ resNet18_tl.fc = torch.nn.Linear(fc_in_features, 2)
 resNet18_tl = resNet18_tl.to(device)
 
 # params (iterable) – iterable of parameters to optimize or dicts defining parameter groups
-optimizer = torch.optim.Adam(resNet18_tl.fc.parameters(), lr = 0.01, weight_decay=1)
+optimizer = torch.optim.Adam(resNet18_tl.fc.parameters(), lr = 0.0002, weight_decay=1)
 
 criterion = nn.CrossEntropyLoss()
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',patience=2)
 
 
-BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl', criterion, optimizer, scheduler, num_epochs = 100, verbose = True)
+BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl', criterion, optimizer, scheduler, num_epochs = 300, verbose = True)
 
 
 
@@ -367,6 +385,17 @@ def PlotAccLoss(model, model_name):
     legend = ax.legend(loc= 'best', shadow=True,
                           bbox_to_anchor = (0.5, 0, 0.5, 0.5), ncol = 1, prop = {'size': 10})
     plt.savefig(os.path.join(graph_path ,'AccuracyCurves_{}.png'.format(model_name)))
+    
+    fig, ax = plt.subplots()
+    for key in model['AucDict']: 
+        ax.plot(model['AucDict'][key], label = key)
+    ax.set_title('Train and Validation AUC Curves')
+    ax.set_ylabel('AUC Score')
+    ax.set_xlabel('Epochs')
+    legend = ax.legend(loc= 'best', shadow=True,
+                          bbox_to_anchor = (0.5, 0, 0.5, 0.5), ncol = 1, prop = {'size': 10})
+    plt.savefig(os.path.join(graph_path ,'AUCCurves_{}.png'.format(model_name)))
+
 
 PlotAccLoss(BestResNet18_tl, 'ResNet18')
 

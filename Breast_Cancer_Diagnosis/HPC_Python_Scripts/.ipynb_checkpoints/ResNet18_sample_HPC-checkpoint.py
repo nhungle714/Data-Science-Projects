@@ -241,7 +241,7 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-                scheduler.step(epoch_loss)
+                #scheduler.step(epoch_loss)
 
     time_elapsed = time.time() - start_time
     print('Training time: {}minutes {}s'.format(int(time_elapsed / 60), time_elapsed % 60))
@@ -343,24 +343,25 @@ dataloaders, dataset_sizes = GetDataLoader_TL(train_csv = train_local_csv,
 #################### Train Model ###########################
 
 
-resNet50_tl = torchvision.models.resnet50(pretrained=True)
-for param in resNet50_tl.parameters():
+resNet18_tl = torchvision.models.resnet18(pretrained=True)
+for param in resNet18_tl.parameters():
     param.requires_grad = False
 
-fc_in_features = resNet50_tl.fc.in_features
-resNet50_tl.fc = torch.nn.Linear(fc_in_features, 2)
+fc_in_features = resNet18_tl.fc.in_features
+resNet18_tl.fc = torch.nn.Linear(fc_in_features, 2)
 
-resNet50_tl = resNet50_tl.to(device)
-
+resNet18_tl = resNet18_tl.to(device)
 
 # params (iterable) – iterable of parameters to optimize or dicts defining parameter groups
-optimizer = torch.optim.Adam(resNet50_tl.fc.parameters(), lr = 0.0001, weight_decay=1)
+optimizer = torch.optim.Adam(resNet18_tl.fc.parameters(), lr = 0.0002, weight_decay=1)
 
 criterion = nn.CrossEntropyLoss()
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',patience=2)
 
-BestResNet50_tl = train_model(resNet50_tl, 'resNet50_tl', criterion, optimizer, scheduler, num_epochs = 300, verbose = True)
+
+BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl', criterion, optimizer, scheduler, num_epochs = 300, verbose = True)
+
 
 
 ################ Plot #####################
@@ -395,7 +396,8 @@ def PlotAccLoss(model, model_name):
                           bbox_to_anchor = (0.5, 0, 0.5, 0.5), ncol = 1, prop = {'size': 10})
     plt.savefig(os.path.join(graph_path ,'AUCCurves_{}.png'.format(model_name)))
 
-PlotAccLoss(BestResNet50_tl, 'ResNet50')
+
+PlotAccLoss(BestResNet18_tl, 'ResNet18')
 
 
 ################ Evaluation on Test Set #####################
@@ -436,8 +438,8 @@ def write_list_to_file(filename, my_list):
 
 
 ##### Inference Resnet18 #######
-BestResNet50_tl = torch.load(os.path.join(graph_path, 'resNet50_tl.pt'))
-y_score_resnet50_tl, y_target_resnet50_tl = inference(BestResNet50_tl, dataloaders['test'])
-write_list_to_file(os.path.join(graph_path, 'y_score_resnet50_tl.txt'), y_score_resnet50_tl)
-write_list_to_file(os.path.join(graph_path, 'y_target_resnet50_tl.txt'), y_target_resnet50_tl)
+BestResNet18_tl = torch.load(os.path.join(graph_path, 'resNet18_tl.pt'))
+y_score_resnet18_tl, y_target_resnet18_tl = inference(BestResNet18_tl, dataloaders['test'])
+write_list_to_file(os.path.join(graph_path, 'y_score_resnet18_tl.txt'), y_score_resnet18_tl)
+write_list_to_file(os.path.join(graph_path, 'y_target_resnet18_tl.txt'), y_target_resnet18_tl)
 
