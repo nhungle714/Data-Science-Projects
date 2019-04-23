@@ -247,19 +247,6 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
     print('Training time: {}minutes {}s'.format(int(time_elapsed / 60), time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
     
-    # for i, phase in enumerate(['train','validation']):
-
-    #     fig = plt.figure()
-        
-    #     a = fig.add_subplot(1,2,1*i+1)
-    #     plt.plot(loss_dict[phase])
-    #     plt.title('Loss per epoch for ' + phase)
-
-    #     a = fig.add_subplot(1,2,1*i+2)
-    #     plt.plot(acc_dict[phase])
-    #     plt.title('Accuracy per epoch for ' + phase)
-    #     plt.show()
-    #     plt.savefig(os.path.join(graph_path ,'Curve {}.png'.format(phase)))
 
     model.load_state_dict(best_model_wts)
     torch.save(model, os.path.join(graph_path, '{}.pt'.format(model_name)))

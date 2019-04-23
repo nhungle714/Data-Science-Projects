@@ -71,18 +71,18 @@ class MammogramDataset_Custom(Dataset):
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, str(self.data_frame.loc[idx, self.image_column]))
         image = pydicom.dcmread(img_name).pixel_array
-        if self.num_channel > 1:
-            image = np.uint8(image/65535*255)
-            image = np.repeat(image[...,None],self.num_channel,axis=-1)
+        h,w = image.shape
+        pad_row = 7500-h
+        pad_col = 5500-w
+        if sum(image[:,-1]) == 0:
+            image = np.pad(image,((0,pad_row),(0,pad_col)),mode='constant',constant_values=0)
         else:
-            h,w = image.shape
-            resized_h = 1024
-            resized_w = int(resized_h / h * w)
-            image = transform.resize(image, (resized_h, resized_w), anti_aliasing=True,mode='constant')
-            pad_col = resized_h - resized_w
-            image = np.pad(image,((0,0),(0,pad_col)),mode='constant',constant_values=0)
-            image = (image - image.mean()) / image.std()
-            image = image[None,...]
+            image = np.pad(image,((0,pad_row),(pad_col,0)),mode='constant',constant_values=0)
+        image = np.float32(image/np.iinfo(image.dtype).max)
+
+        image = (image - 0.3328) / 0.7497
+        if self.num_channel > 1:
+            image=np.repeat(image[None,...],self.num_channel,axis=0)
         
         image_class = self.data_frame.loc[idx, 'class']
 
@@ -92,13 +92,15 @@ class MammogramDataset_Custom(Dataset):
             p1 = random.uniform(0, 1)
             p2 = random.uniform(0, 1)
             if p1 <= self.transform_prob:
-                image = image[:,:,-1].copy()
-            if p2 <= self.transform_prob:
-                image = transform.rotate(image,180)
+                if p2 <= self.transform_prob:
+                    image = np.flip(image,0).copy()
+                else:
+                    image = np.flip(image,1).copy()
+            
         
-        sample = {'x': image, 'y': image_class}
+        sample = {'x': image[None,:], 'y': image_class}
+    return sample
 
-        return sample
 
 def GetDataLoader_TL(train_csv, validation_csv, test_csv, 
                      root_dir, image_column, num_channel, 
@@ -302,38 +304,38 @@ class CNN_Disease(nn.Module):
 
 ####################  Define Data Path ###########################
 
-# ######### HPC Paths - Sample Data Set ######## 
-# excel_path = '/home/nhl256/BreastCancer/excel_files'
-# train_local_csv = os.path.join(excel_path, 
-#                              'twoClass_trainSet_sample.csv')
-# validation_local_csv = os.path.join(excel_path, 
-#                               'twoClass_validSet_sample.csv')
-# test_local_csv = os.path.join(excel_path, 
-#                               'twoClass_testSet_sample.csv')
-
-# image_path = '/scratch/bva212/breastCancerData'
-# #root_image = os.path.join(image_path ,'CBIS-DDSM')
-# root_image = image_path
-
-# NUM_WORKERS = 4
-# BATCH_SIZE = 4
-# graph_path = '/home/nhl256/BreastCancer/graphs'
-
-######### Local Machine Paths ######## 
-excel_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/excel_files'
+######### HPC Paths - Sample Data Set ######## 
+excel_path = '/home/nhl256/BreastCancer/excel_files'
 train_local_csv = os.path.join(excel_path, 
-                              'train_local.csv')
+                             'twoClass_trainSet_sample.csv')
 validation_local_csv = os.path.join(excel_path, 
-                              'validation_local.csv')
+                              'twoClass_validSet_sample.csv')
 test_local_csv = os.path.join(excel_path, 
-                              'test_local.csv')
+                              'twoClass_testSet_sample.csv')
 
-image_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis'
-root_image = os.path.join(image_path ,'images')
+image_path = '/scratch/bva212/breastCancerData'
+#root_image = os.path.join(image_path ,'CBIS-DDSM')
+root_image = image_path
 
-NUM_WORKERS = 1
-BATCH_SIZE = 1
-graph_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/graphs'
+NUM_WORKERS = 4
+BATCH_SIZE = 4
+graph_path = '/home/nhl256/BreastCancer/graphs'
+
+# ######### Local Machine Paths ######## 
+# excel_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/excel_files'
+# train_local_csv = os.path.join(excel_path, 
+#                               'train_local.csv')
+# validation_local_csv = os.path.join(excel_path, 
+#                               'validation_local.csv')
+# test_local_csv = os.path.join(excel_path, 
+#                               'test_local.csv')
+
+# image_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis'
+# root_image = os.path.join(image_path ,'images')
+
+# NUM_WORKERS = 1
+# BATCH_SIZE = 1
+# graph_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/graphs'
 
 #################### Get Dataloaders and Datasets_sizes ###########################
 
@@ -360,7 +362,7 @@ dataloaders, dataset_sizes = GetDataLoader_TL(train_csv = train_local_csv,
                                             validation_csv = validation_local_csv, 
                                             test_csv = test_local_csv, 
                                             root_dir = root_image, 
-                                           image_column = 'local_image',
+                                           image_column = 'image file path',
                                             num_channel = 1, 
                                             transform_type = None, 
                                               transform_prob=0.5,
