@@ -45,67 +45,6 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import label_binarize
 import pydicom
 
-# class MammogramDataset_TL(Dataset):
-
-#     def __init__(self, csv_file, root_dir, image_column, num_channel, transform=None,
-#                 transform_type = 'Custom', transform_prob=0.5):
-#         """
-#         Args:
-#             csv_file (string): Path to the csv file filename information.
-#             root_dir (string): Directory with all the images.
-#             transform (callable, optional): Optional transform to be applied
-#                 on a sample.
-#             image_column (string): name of the column image used
-#         """
-#         self.data_frame = pd.read_csv(csv_file)
-#         self.root_dir = root_dir
-#         self.transform = transform
-#         self.image_column = image_column
-#         self.num_channel = num_channel
-#         self.transform_prob = transform_prob
-#         self.transform_type = transform_type
-#         self.samples = []
-        
-#         for idx in range(len(self.data_frame)):
-#             image_name = os.path.join(self.root_dir,
-#                                     self.data_frame.loc[idx, image_column])
-
-#             image = pydicom.dcmread(image_name).pixel_array
-            
-#             if self.num_channel > 1:
-#                 image = np.uint8(image/65535*255)
-#                 image = np.repeat(image[...,None],self.num_channel,axis=-1)
-#             else:
-#                 h,w = image.shape
-#                 resized_h = 1024
-#                 resized_w = int(resized_h/h*w)
-#                 image = transform.resize(image, (resized_h, resized_w), anti_aliasing=True,mode='constant')
-#                 pad_col = resized_h-resized_w
-#                 image = np.pad(image,((0,0),(0,pad_col)),mode='constant',constant_values=0)
-#                 image = (image - image.mean()) / image.std()
-#                 image = image[None,...]
-
-#             image_class = self.data_frame.loc[idx, 'class']
-
-#             if self.transform:
-#                 image = self.transform(image)
-#             elif self.transform_type == 'Custom':
-#                 p1 = random.uniform(0, 1)
-#                 p2 = random.uniform(0, 1)
-#                 if p1 <= self.transform_prob:
-#                     image = image[:,:,-1].copy()
-#                 if p2 <= self.transform_prob:
-#                     image = transform.rotate(image,180)
-
-#             sample = {'x': image, 'y': image_class}
-#             self.samples.append(sample)
-
-#     def __len__(self):
-#         return len(self.data_frame)
-
-#     def __getitem__(self, idx):
-#         return self.samples[idx]
-
 class MammogramDataset_TL(Dataset):   
     def __init__(self, csv_file, root_dir, image_column, num_channel=1, transform = None, transform_type = 'Custom', transform_prob=0.5):
         """
@@ -189,12 +128,6 @@ def GetDataLoader_TL(train_csv, validation_csv, test_csv,
                                    transform_prob = transform_prob)
     
     image_datasets = {'train': train_data, 'val': val_data, 'test': test_data}
-#     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE,
-#                             shuffle = shuffle, num_workers = NUM_WORKERS)
-#     val_loader = DataLoader(val_data, batch_size=BATCH_SIZE,
-#                             shuffle = shuffle, num_workers = NUM_WORKERS)
-#     test_loader = DataLoader(test_data, batch_size=BATCH_SIZE,
-#                             shuffle = shuffle, num_workers = NUM_WORKERS)
     
 
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], 
@@ -203,9 +136,6 @@ def GetDataLoader_TL(train_csv, validation_csv, test_csv,
                                               num_workers=NUM_WORKERS) 
                     for x in ['train', 'val', 'test']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val', 'test']}
-#     print(len(image_datasets['train']), 
-#           len(image_datasets['val']),
-#          len(image_datasets['test']))
     return dataloaders, dataset_sizes
 
 def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs = 10,verbose = True):
@@ -301,19 +231,6 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
     print('Training time: {}minutes {}s'.format(int(time_elapsed / 60), time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
     
-    # for i, phase in enumerate(['train','validation']):
-
-    #     fig = plt.figure()
-        
-    #     a = fig.add_subplot(1,2,1*i+1)
-    #     plt.plot(loss_dict[phase])
-    #     plt.title('Loss per epoch for ' + phase)
-
-    #     a = fig.add_subplot(1,2,1*i+2)
-    #     plt.plot(acc_dict[phase])
-    #     plt.title('Accuracy per epoch for ' + phase)
-    #     plt.show()
-    #     plt.savefig(os.path.join(graph_path ,'Curve {}.png'.format(phase)))
 
     model.load_state_dict(best_model_wts)
     torch.save(model, os.path.join(graph_path, '{}.pt'.format(model_name)))
@@ -338,6 +255,7 @@ root_image = image_path
 NUM_WORKERS = 4
 BATCH_SIZE = 4
 graph_path = '/home/nhl256/BreastCancer/graphs'
+image_column = 'image file path'
 
 # ######### Local Machine Paths ######## 
 # excel_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/excel_files'
@@ -386,7 +304,7 @@ dataloaders, dataset_sizes = GetDataLoader_TL(train_csv = train_local_csv,
                                             validation_csv = validation_local_csv, 
                                             test_csv = test_local_csv, 
                                             root_dir = root_image, 
-                                           image_column = 'image file path',
+                                           image_column = image_column,
                                             num_channel = 3, 
                                             transform_type = None, 
                                               transform_prob=0.5,
@@ -395,7 +313,8 @@ dataloaders, dataset_sizes = GetDataLoader_TL(train_csv = train_local_csv,
 
 
 #################### Train Model ###########################
-
+pretrained = torch.load(os.path.join(graph_path, 'resNet18_tl.pt'), map_location='cpu')
+torch.save(pretrained.state_dict(), os.path.join(graph_path, 'resnet_18_w.pt' ))
 
 resNet18_tl = torchvision.models.resnet18(pretrained=True)
 for param in resNet18_tl.parameters():
@@ -404,7 +323,13 @@ for param in resNet18_tl.parameters():
 fc_in_features = resNet18_tl.fc.in_features
 resNet18_tl.fc = torch.nn.Linear(fc_in_features, 2)
 
-resNet18_tl = resNet18_tl.to(device)
+if use_gpu:
+    resNet18_tl = resNet18_tl.to(device)
+    resNet18_tl.load_state_dict(torch.load(os.path.join(graph_path, 'resnet_18_w.pt')))
+else:
+    resNet18_tl = resNet18_tl
+    resNet18_tl.load_state_dict(torch.load(os.path.join(graph_path, 'resnet_18_w.pt'), map_location = 'cpu'))
+
 
 # params (iterable) – iterable of parameters to optimize or dicts defining parameter groups
 optimizer = torch.optim.Adam(resNet18_tl.fc.parameters(), lr = 0.0001, weight_decay=1)
@@ -414,7 +339,7 @@ criterion = nn.CrossEntropyLoss()
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',patience=2)
 
 
-BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl', criterion, optimizer, scheduler, num_epochs = 250, verbose = True)
+BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl_full', criterion, optimizer, scheduler, num_epochs = 100, verbose = True)
 
 
 
@@ -451,7 +376,7 @@ def PlotAccLoss(model, model_name):
     plt.savefig(os.path.join(graph_path ,'AUCCurves_{}.png'.format(model_name)))
 
 
-PlotAccLoss(BestResNet18_tl, 'ResNet18')
+PlotAccLoss(BestResNet18_tl, 'ResNet18_full')
 
 
 ################ Evaluation on Test Set #####################
@@ -494,6 +419,6 @@ def write_list_to_file(filename, my_list):
 ##### Inference Resnet18 #######
 BestResNet18_tl = torch.load(os.path.join(graph_path, 'resNet18_tl.pt'))
 y_score_resnet18_tl, y_target_resnet18_tl = inference(BestResNet18_tl, dataloaders['test'])
-write_list_to_file(os.path.join(graph_path, 'y_score_resnet18_tl.txt'), y_score_resnet18_tl)
-write_list_to_file(os.path.join(graph_path, 'y_target_resnet18_tl.txt'), y_target_resnet18_tl)
+write_list_to_file(os.path.join(graph_path, 'y_score_resnet18_tl_full.txt'), y_score_resnet18_tl)
+write_list_to_file(os.path.join(graph_path, 'y_target_resnet18_tl_full.txt'), y_target_resnet18_tl)
 

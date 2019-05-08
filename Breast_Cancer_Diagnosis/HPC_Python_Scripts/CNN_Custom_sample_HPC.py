@@ -99,7 +99,7 @@ class MammogramDataset_Custom(Dataset):
             
         
         sample = {'x': image[None,:], 'y': image_class}
-    return sample
+        return sample
 
 
 def GetDataLoader_TL(train_csv, validation_csv, test_csv, 
@@ -139,6 +139,7 @@ def GetDataLoader_TL(train_csv, validation_csv, test_csv,
                     for x in ['train', 'val', 'test']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val', 'test']}
     return dataloaders, dataset_sizes
+
 
 
 def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs = 10,verbose = True):
@@ -320,6 +321,7 @@ root_image = image_path
 NUM_WORKERS = 4
 BATCH_SIZE = 4
 graph_path = '/home/nhl256/BreastCancer/graphs'
+image_column = 'image file path'
 
 # ######### Local Machine Paths ######## 
 # excel_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/excel_files'
@@ -338,39 +340,25 @@ graph_path = '/home/nhl256/BreastCancer/graphs'
 # graph_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/graphs'
 
 #################### Get Dataloaders and Datasets_sizes ###########################
-
 use_gpu = torch.cuda.is_available()
 if torch.cuda.is_available:
     device = torch.device('cuda')
 else:
     device = torch.device('cpu')
 
-train_transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize([2048,2048]),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
-validation_transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize([2048,2048]),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
+#### Get Dataloaders and Datasets_sizes
 dataloaders, dataset_sizes = GetDataLoader_TL(train_csv = train_local_csv, 
                                             validation_csv = validation_local_csv, 
                                             test_csv = test_local_csv, 
                                             root_dir = root_image, 
-                                           image_column = 'image file path',
-                                            num_channel = 1, 
+                                           image_column = image_column,
+                                            num_channel = 1,
                                             transform_type = None, 
                                               transform_prob=0.5,
-               train_transform = None, validation_transform = None, 
+               train_transform =None, validation_transform = None, 
                batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS) 
 
 #################### Train Model ###########################
-
 if use_gpu:
     model = CNN_Disease().to(device)
     model.load_state_dict(torch.load(os.path.join(excel_path, 'Custom_ModelBonus_Wt')))
@@ -378,8 +366,7 @@ else:
     model = CNN_Disease()
     model.load_state_dict(torch.load(os.path.join(excel_path, 'Custom_ModelBonus_Wt'), map_location='cpu'))
 
-
-optimizer = torch.optim.Adam(model.fc.parameters(), lr = 0.0001, weight_decay=1)
+optimizer = torch.optim.Adam(model.fc.parameters(), lr = 0.00001, weight_decay=1)
 
 criterion = nn.CrossEntropyLoss()
 
@@ -387,7 +374,6 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',patience
 
 
 BestCNN = train_model(model, 'CNN', criterion, optimizer, scheduler, num_epochs = 20, verbose = True)
-
 
 
 ################ Plot #####################

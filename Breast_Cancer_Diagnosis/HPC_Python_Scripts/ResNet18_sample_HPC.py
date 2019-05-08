@@ -135,12 +135,6 @@ def GetDataLoader_TL(train_csv, validation_csv, test_csv,
                                    transform_prob = transform_prob)
     
     image_datasets = {'train': train_data, 'val': val_data, 'test': test_data}
-#     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE,
-#                             shuffle = shuffle, num_workers = NUM_WORKERS)
-#     val_loader = DataLoader(val_data, batch_size=BATCH_SIZE,
-#                             shuffle = shuffle, num_workers = NUM_WORKERS)
-#     test_loader = DataLoader(test_data, batch_size=BATCH_SIZE,
-#                             shuffle = shuffle, num_workers = NUM_WORKERS)
     
 
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], 
@@ -149,9 +143,6 @@ def GetDataLoader_TL(train_csv, validation_csv, test_csv,
                                               num_workers=NUM_WORKERS) 
                     for x in ['train', 'val', 'test']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val', 'test']}
-#     print(len(image_datasets['train']), 
-#           len(image_datasets['val']),
-#          len(image_datasets['test']))
     return dataloaders, dataset_sizes
 
 def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs = 10,verbose = True):
@@ -172,7 +163,7 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
             print('-' * 10)
             
         ## Scheduler learning step
-        #scheduler.step()
+        scheduler.step()
             
         for phase in ['train','val']:
             if phase == 'train':
@@ -227,7 +218,7 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
 
             if verbose:
 #                 if epoch % 5 == 4:
-                print('{} Loss: {:.4f} Acc: {:.4f} Auc: {:.4f}'.format(phase, epoch_loss, epoch_acc, epoch_auc))
+                print('{} Loss: {:.4f} Acc: {:.4f} Auc'.format(phase, epoch_loss, epoch_acc, epoch_auc))
 
             if phase == 'train':
                 loss_dict['train'].append(epoch_loss)
@@ -241,12 +232,25 @@ def train_model(model, model_name, criterion, optimizer, scheduler, num_epochs =
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-                scheduler.step(epoch_loss)
+                #scheduler.step(epoch_loss)
 
     time_elapsed = time.time() - start_time
     print('Training time: {}minutes {}s'.format(int(time_elapsed / 60), time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
     
+    # for i, phase in enumerate(['train','validation']):
+
+    #     fig = plt.figure()
+        
+    #     a = fig.add_subplot(1,2,1*i+1)
+    #     plt.plot(loss_dict[phase])
+    #     plt.title('Loss per epoch for ' + phase)
+
+    #     a = fig.add_subplot(1,2,1*i+2)
+    #     plt.plot(acc_dict[phase])
+    #     plt.title('Accuracy per epoch for ' + phase)
+    #     plt.show()
+    #     plt.savefig(os.path.join(graph_path ,'Curve {}.png'.format(phase)))
 
     model.load_state_dict(best_model_wts)
     torch.save(model, os.path.join(graph_path, '{}.pt'.format(model_name)))
@@ -271,22 +275,7 @@ root_image = image_path
 NUM_WORKERS = 4
 BATCH_SIZE = 4
 graph_path = '/home/nhl256/BreastCancer/graphs'
-
-# ######### Local Machine Paths ######## 
-# excel_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/excel_files'
-# train_local_csv = os.path.join(excel_path, 
-#                               'train_local.csv')
-# validation_local_csv = os.path.join(excel_path, 
-#                               'validation_local.csv')
-# test_local_csv = os.path.join(excel_path, 
-#                               'test_local.csv')
-
-# image_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis'
-# root_image = os.path.join(image_path ,'images')
-
-# NUM_WORKERS = 1
-# BATCH_SIZE = 1
-# graph_path = '/Users/nhungle/Box/Free/Data-Science-Projects/Breast_Cancer_Diagnosis/graphs'
+image_column = 'image file path'
 
 #################### Get Dataloaders and Datasets_sizes ###########################
 
@@ -296,11 +285,6 @@ if torch.cuda.is_available:
 else:
     device = torch.device('cpu')
 
-use_gpu = torch.cuda.is_available()
-if torch.cuda.is_available:
-    device = torch.device('cuda')
-else:
-    device = torch.device('cpu')
 
 train_transform = transforms.Compose([
         transforms.ToPILImage(),
@@ -319,7 +303,7 @@ dataloaders, dataset_sizes = GetDataLoader_TL(train_csv = train_local_csv,
                                             validation_csv = validation_local_csv, 
                                             test_csv = test_local_csv, 
                                             root_dir = root_image, 
-                                           image_column = 'image file path',
+                                           image_column = image_column,
                                             num_channel = 3, 
                                             transform_type = None, 
                                               transform_prob=0.5,
@@ -340,15 +324,13 @@ resNet18_tl.fc = torch.nn.Linear(fc_in_features, 2)
 resNet18_tl = resNet18_tl.to(device)
 
 # params (iterable) – iterable of parameters to optimize or dicts defining parameter groups
-optimizer = torch.optim.Adam(resNet18_tl.fc.parameters(), lr = 0.0002, weight_decay=1)
+optimizer = torch.optim.SGD(resNet18_tl.fc.parameters(), lr = 0.00005, momentum=0.9)
 
 criterion = nn.CrossEntropyLoss()
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',patience=2)
 
-
-BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl', criterion, optimizer, scheduler, num_epochs = 300, verbose = True)
-
+BestResNet18_tl = train_model(resNet18_tl, 'resNet18_tl_SGD', criterion, optimizer, scheduler, num_epochs = 200, verbose = True)
 
 
 ################ Plot #####################
@@ -384,7 +366,7 @@ def PlotAccLoss(model, model_name):
     plt.savefig(os.path.join(graph_path ,'AUCCurves_{}.png'.format(model_name)))
 
 
-PlotAccLoss(BestResNet18_tl, 'ResNet18')
+PlotAccLoss(BestResNet18_tl, 'ResNet18_SGD')
 
 
 ################ Evaluation on Test Set #####################
@@ -425,8 +407,8 @@ def write_list_to_file(filename, my_list):
 
 
 ##### Inference Resnet18 #######
-BestResNet18_tl = torch.load(os.path.join(graph_path, 'resNet18_tl.pt'))
+BestResNet18_tl = torch.load(os.path.join(graph_path, 'resNet18_tl_SGD.pt'))
 y_score_resnet18_tl, y_target_resnet18_tl = inference(BestResNet18_tl, dataloaders['test'])
-write_list_to_file(os.path.join(graph_path, 'y_score_resnet18_tl.txt'), y_score_resnet18_tl)
-write_list_to_file(os.path.join(graph_path, 'y_target_resnet18_tl.txt'), y_target_resnet18_tl)
+write_list_to_file(os.path.join(graph_path, 'y_score_resnet18_tl_SGD.txt'), y_score_resnet18_tl)
+write_list_to_file(os.path.join(graph_path, 'y_target_resnet18_tl_SGD.txt'), y_target_resnet18_tl)
 
