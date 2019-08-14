@@ -1,8 +1,8 @@
 ## Chest X-Ray
 
-This project focuses on classifiying the lung disease using chest x-ray dataset provided by NIH (https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community). 
+This project aims to classify pneumothorax and cardiomegaly cases, using deep CNN models including 1) customized convolutional ResNet and 2) transfered learning resnet 34.
 
-The goal is to classify pneumothorax and cardiomegaly cases, using deep CNN models 1) customized convolutional ResNet and 2) transfered learning resnet 34. I used HPC at NYU to train the models. 
+Inputs are chest x-ray dataset provided by NIH (https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community). 
 
 Architecture of the Customized Convolutional ResNet model:
 
