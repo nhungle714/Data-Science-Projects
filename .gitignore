@@ -1,0 +1,16 @@
+**/*.iml
+**/target/
+**/.idea
+**/venv
+**/.ipynb_checkpoints/
+**/__pycache__
+**/*.out
+**/*.blg
+**/*.swp
+**/*.bbl
+**/*.fdb_latexmk
+**/*.log
+**/*.fls
+**/*.synctex.gz
+**/*.aux
+**/data/
