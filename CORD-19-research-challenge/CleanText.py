@@ -1,10 +1,6 @@
 import os
 import pandas as pd
 import numpy as np
-import pyspark.sql.functions as fn
-from pyspark.sql.functions import desc
-from pyspark.sql.types import *
-from pyspark.sql.functions import monotonically_increasing_id, rand, col
 from textblob import TextBlob
 import nltk
 import datetime
